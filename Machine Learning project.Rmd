@@ -1,0 +1,193 @@
+---
+title: "machine learning project"
+author: "xiaoxuan liang"
+date: "April 21, 2019"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#Question
+We were about to mainly investigate what factor can affect of eight predictors of different building features on outcome called cooling load with data analysis. The basic steps of analysis: 1.Did the assumption tests to know if there are some problems from the datasets and also ; 2.Based on the numeric outcome,  we used 4 models to do the prediction with relevant cross-validation.
+
+#Data Set information
+Our data is collected from UCI Machine Learning Repository http://archive.ics.uci.edu/ml/datasets/energy+efficiency.
+This dataset is using 12 different building shapes simulated in Ecotect. This data consists 768 samples, 8 characteristics, and 2 response variables Cooling Load and Heating Load. We choose to predict the Cooling Load.
+
+#Predictor variables:
+ Relative Compactness 
+Surface Area
+Wall Area
+Roof Area
+Overall Height 
+Orientation
+Glazing Area
+Glazing Area Distribution
+
+#Outcome variable:
+Cooling Load (numeric)
+
+#Modelling
+
+```{r}
+library(tidyverse)
+ENB = read.csv("ENB1.csv", header = T)
+#PM <- na.omit(PM)
+#PM = PM[,-(1:5)]
+attach(ENB)
+ENB.fit = lm(cooling~.-Heating,data = ENB)
+summary(ENB.fit)
+plot(ENB.fit)
+```
+
+#We tested linear regression model, and plot its residual plot. From the residual plot, we can clearly see that the dataset has the problem of unnormal distribution.
+
+
+```{r}
+#Handles with normality boxcox
+library(MASS)
+library(car)
+
+boxcox(ENB.fit, lambda = seq(-3,0,0.01))
+cooling.box<-cooling^(-0.25)
+lm.fit.box<-lm(cooling.box~.-Heating-cooling,data = ENB)
+summary(lm.fit.box)
+plot(lm.fit.box)
+```
+
+#We use Box-Cox to solve Y and X are not normally distributed with the best lambda -0.25. From the residual plot, errors becomes normally distributed.
+
+
+```{r}
+#Lack of fit with boxcox 
+full = lm(cooling.box~ as.factor(Compactness) + as.factor(Surface) + as.factor(wall) + as.factor(roof) + as.factor(height) + as.factor(orientation) + as.factor( glazing) + as.factor(Distribution)-Heating-cooling, data = ENB)
+anova(lm.fit.box, full)
+
+```
+
+#We used lack of fit to test if this box-cox model is linearity or not. By comparing box-cox model and full model, the p-value is very small and significant,which means the p-value rejected the hypothesis(the model is linear). Therefore, the relation of cooling.box to these predictors is non-linear.
+
+
+```{r}
+#correlation plots (varibales selection)
+library(ggplot2)
+library(GGally)
+ggpairs(ENB)
+```
+```{r}
+#select varibale with nonlinear (lack of fit)
+full.S = lm(cooling.box ~ as.factor(Surface),data = ENB)
+null.S=lm(cooling.box~Surface, data=ENB)
+anova(null.S,full.S)
+#plot(interact,cooling.box)
+
+# Spline model
+set.seed(1234)
+library(boot)
+library(leaps)
+D <- 1*(Surface > 675)
+interact <- Surface*D
+ENB <- data.frame(ENB,interact)
+n = length(cooling.box);      Z = sample(n,200); 
+cv.err = rep(0,50);    ENB.train = ENB[Z,];
+for (p in 1:50){
+attach(ENB.train);  ss = smooth.spline(interact, cooling.box, df=p+0.01)  
+attach(ENB);      Yhat = predict(ss, interact)
+cv.err[p] = mean( (Yhat$y[-Z] - cooling.box[-Z])^2 ) }
+which.min(cv.err)
+
+ss = smooth.spline(interact, cooling.box, df=7.01) 
+Yhat = predict(ss)
+plot(interact,cooling.box);lines(Yhat,lwd=3,col="red")
+
+```
+
+#As we tested before, the 8 predicotrs have non-linear with the outcome. Based on the correlation plot, we chose the input varibale called "Surface" which has nonlinear relationship with the varibale cooling load. We fitted the smmoothing splines of the optimal degree of freedom 7.01 which is the one with the smallest prediction error with cross-validation. Afterwards, the plot of the model be shown above.
+
+
+```{r}
+#variable selection with boxcox model
+null = lm(cooling.box~1, data = ENB)
+fit.step = step(lm.fit.box, list=scope(upper = lm.fit.box, lower = null), direction = 'both')
+summary(fit.step)
+lm.fit.box.variable <- lm(cooling.box ~ Compactness + wall + height + glazing,data = ENB)
+```
+
+#We used variable selection stepwise method to keep the best predictors to predict. We obtained a new model lm.fit.box.variable with AIC= -6696.73 containing four predictor variables: Compactness, wall, height, and glazing. 
+
+
+```{r}
+#Test for multicollinearity
+library(perturb)
+vif(lm.fit.box.variable)
+```
+
+#We used variance inflation factor (VIF) to test whether this new model has multicollinearity or not. The result indicated that their values are not very high. However, "Compactness" and "height" are close to 10. Therefore, we assume that the dataset has the multicollinearity problem.
+
+
+
+```{r}
+#lasso
+library(glmnet)
+#cooling.box<-cooling^(-0.25)
+cooling.box <- na.omit(cooling.box)
+ENB<-data.frame(ENB,cooling.box)
+ENB<-na.omit(ENB)
+x = model.matrix(cooling.box~Compactness + wall + height + glazing, data = ENB)[,-1]
+y = ENB$cooling.box
+n = length(cooling.box)
+Z = sample(n, 0.7*n)
+train = sample(nrow(x), 0.7*nrow(x))
+training = ENB[train,]
+testing = ENB[-train,]
+cooling.lasso = glmnet(x,y,alpha = 1)
+cv.cooling = cv.glmnet(x, y, alpha = 1)
+plot(cv.cooling)
+cv.cooling$lambda.min
+which.min(cv.cooling$cvm)
+predict.lasso<-predict(cooling.lasso, s=cv.cooling$lambda.min,newx=x[-train,])
+lasso.coef<-predict(cooling.lasso, s=cv.cooling$lambda.min, type = 'coefficient')
+lasso.coef
+mean((predict.lasso- testing$cooling.box)^2)
+```
+
+#Because we got the problem of multicollinearity problem. we tried to use LASSO to solve the problem. At first, we separated our dataset into training (70% data) and testing  (30% data). Then, we use cross-validation in order to get the best tuning parameter which the value of lambda is 6.123287e-05 and we got the final MSE is 0.0001681231. Also, all the predictors we used are still kept in the model.
+
+
+```{r}
+#randomForest
+library(randomForest)
+# I'm choosing a small test set to make the training set close to the whole data set
+cv.err = rep(0,7) # The optimal random forest may be too dependent on the sample size
+n.trees = rep(0,7)
+for (m in 1:7){
+rf.m = randomForest( cooling~.-Heating, data=ENB[Z,], mtry=m )
+opt.trees = which.min(rf.m$mse)
+rf.m = randomForest( cooling~.-Heating, data=ENB[Z,], mtry=m, ntree=opt.trees )
+Yhat = predict( rf.m, newdata=ENB[-Z,] )
+mse = mean( (Yhat - cooling.box[-Z])^2 )
+cv.err[m] = mse
+n.trees[m] = opt.trees
+}
+which.min(cv.err)
+plot(cv.err);lines(cv.err)
+cv.err
+which.min(n.trees)
+n.trees
+
+rf.optional = randomForest(cooling.box~.-Heating, data = ENB[Z,], mtry = 1, ntree=101) #mtry the number of X-variables available at each node.
+yhat1 <- predict(rf.optional,newdata = ENB[-Z,])
+mse.random<-mean((yhat1-cooling.box[-Z])^2)
+mse.random
+rf.optional
+importance(rf.optional)
+```
+
+#The last model we used is "Random Forest". Firstly, we created the model based on the training data.Apparently, bagging(m=p=1) was the best choice among random forests. After that, we got the optimal number of predictors used in each iteration with the lowest mean squared error(671.8473) and the number of trees(463) with cross-validation. Finally, we selected m equals 1 predictors and 463 trees to fit in Random Forest model and the showed the lower MSE(8.957138e-05).
+
+
+
+
+
+
