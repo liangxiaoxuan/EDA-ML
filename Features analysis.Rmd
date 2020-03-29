@@ -7,26 +7,6 @@ output: word_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
-#Question
-We were about to mainly investigate what factor can affect of eight predictors of different building features on outcome called cooling load with data analysis. The basic steps of analysis: 1.Did the assumption tests to know if there are some problems from the datasets and also ; 2.Based on the numeric outcome,  we used 4 models to do the prediction with relevant cross-validation.
-
-#Data Set information
-Our data is collected from UCI Machine Learning Repository http://archive.ics.uci.edu/ml/datasets/energy+efficiency.
-This dataset is using 12 different building shapes simulated in Ecotect. This data consists 768 samples, 8 characteristics, and 2 response variables Cooling Load and Heating Load. We choose to predict the Cooling Load.
-
-#Predictor variables:
- Relative Compactness 
-Surface Area
-Wall Area
-Roof Area
-Overall Height 
-Orientation
-Glazing Area
-Glazing Area Distribution
-
-#Outcome variable:
-Cooling Load (numeric)
 
 #Modelling
 
