@@ -5,5 +5,5 @@ About to mainly investigate what factor can affect of eight predictors of differ
 
 The basic steps of analysis:
 
-1.Did the assumption tests to know if there are some problems from the datasets and also. 
-2.Based on the numeric outcome,  we used 4 models to do the prediction with relevant cross-validation.
+*Did the assumption tests to know if there are some problems from the datasets and also. 
+*Based on the numeric outcome,  we used 4 models to do the prediction with relevant cross-validation.
