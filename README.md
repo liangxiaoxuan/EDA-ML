@@ -11,17 +11,17 @@ The basic steps of analysis:
 ### Dataset:
 From UCI Machine Learning Repository http://archive.ics.uci.edu/ml/datasets/energy+efficiency:
 Total samples: 768 
-##### Predictor variables:
- Relative Compactness 
- Surface Area
- Wall Area
-Roof Area
-Overall Height 
-Orientation
-Glazing Area
-Glazing Area Distribution
-##### Outcome variable:
-Cooling Load (numeric)
+#### Predictor variables:
+* Relative Compactness 
+* Surface Area
+* Wall Area
+* Roof Area
+* Overall Height 
+* Orientation
+* Glazing Area
+* Glazing Area Distribution
+#### Outcome variable:
+* Cooling Load (numeric)
 
 
 
