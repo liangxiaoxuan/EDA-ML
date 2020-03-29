@@ -23,5 +23,19 @@ Total samples: 768
 #### Outcome variable:
 * Cooling Load (numeric)
 
+### Statistical Method 
+* Linear Regression 
+* Residual plot
+* correlation plots
+* Box Cox Transformation
+* Lack-of-fit test
+* Variable Selection stepwise
+
+### Machine learning Method
+* Spline model
+* LASSO
+* RandomForest
+
+
 
 
