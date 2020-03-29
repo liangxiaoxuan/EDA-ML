@@ -13,8 +13,8 @@ From UCI Machine Learning Repository http://archive.ics.uci.edu/ml/datasets/ener
 Total samples: 768 
 ##### Predictor variables:
  Relative Compactness 
-Surface Area
-Wall Area
+ Surface Area
+ Wall Area
 Roof Area
 Overall Height 
 Orientation
